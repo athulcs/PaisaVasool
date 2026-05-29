@@ -26,7 +26,7 @@ data class Category(
     val name: String,
     val icon: ImageVector,
     val color: Color,
-    val budget: Double = 0.0
+    val budget: Double = 0.0,
 ) {
     companion object {
         val Food = Category("food", "Food & Dining", Icons.Filled.Fastfood, CatFood, 8000.0)

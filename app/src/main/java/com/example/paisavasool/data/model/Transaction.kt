@@ -11,5 +11,5 @@ data class Transaction(
     val amount: Double,
     val timestamp: Long,
     val category: String,
-    val type: TransactionType
+    val type: TransactionType,
 )

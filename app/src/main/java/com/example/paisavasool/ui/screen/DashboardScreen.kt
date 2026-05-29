@@ -22,6 +22,7 @@ fun DashboardScreen(
     onViewAllClick: () -> Unit,
     onEditClick: (Int) -> Unit
 ) {
+    val isIncomeTrackingEnabled by viewModel.isIncomeTrackingEnabled.collectAsState()
     val balance by viewModel.balance.collectAsState()
     val transactions by viewModel.allTransactions.collectAsState()
     val scrollState = rememberScrollState()
@@ -54,9 +55,12 @@ fun DashboardScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text(text = "Total Balance", color = MaterialTheme.colorScheme.onPrimary)
                     Text(
-                        text = "₹$balance",
+                        text = if (isIncomeTrackingEnabled) "Total Balance" else "Total Expenses",
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Text(
+                        text = if (isIncomeTrackingEnabled) "₹$balance" else "₹${-viewModel.totalExpense.collectAsState().value}",
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.onPrimary
                     )

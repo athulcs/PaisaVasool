@@ -1,14 +1,12 @@
 package com.example.paisavasool.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -22,7 +20,7 @@ private val DarkColorScheme = darkColorScheme(
     onPrimary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFB0B0B0)
+    onSurfaceVariant = Color(0xFFB0B0B0),
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -35,7 +33,7 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Color.White,
     onBackground = Color(0xFF0F172A),
     onSurface = Color(0xFF0F172A),
-    onSurfaceVariant = Color(0xFF64748B)
+    onSurfaceVariant = Color(0xFF64748B),
 )
 
 @Composable
@@ -48,7 +46,6 @@ fun PaisaVasoolTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

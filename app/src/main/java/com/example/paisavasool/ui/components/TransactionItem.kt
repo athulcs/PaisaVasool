@@ -19,7 +19,7 @@ import java.util.*
 @Composable
 fun TransactionItem(
     transaction: Transaction,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     val category = Category.getCategoryByName(transaction.category)
 

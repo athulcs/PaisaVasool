@@ -4,8 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -48,10 +47,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.paisavasool.data.database.AppDatabase
 import com.example.paisavasool.data.repository.ExpenseRepository
+import com.example.paisavasool.data.repository.PreferenceManager
 import com.example.paisavasool.ui.screen.AddTransactionScreen
 import com.example.paisavasool.ui.screen.AnalyticsScreen
 import com.example.paisavasool.ui.screen.DashboardScreen
 import com.example.paisavasool.ui.screen.HistoryScreen
+import com.example.paisavasool.ui.screen.SettingsScreen
 import com.example.paisavasool.ui.theme.IndigoPrimary
 import com.example.paisavasool.ui.theme.IndigoSecondary
 import com.example.paisavasool.ui.theme.PaisaVasoolTheme
@@ -67,12 +68,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Initialize SharedPreferences Manager
+        val preferenceManager = PreferenceManager(applicationContext)
+
         // Initialize Room Database, DAO and Repository
         val database = AppDatabase.getDatabase(applicationContext)
         val repository = ExpenseRepository(database.transactionDao())
 
         // Initialize ViewModel using Factory
-        val factory = ExpenseViewModelFactory(repository)
+        val factory = ExpenseViewModelFactory(repository, preferenceManager)
         viewModel = ViewModelProvider(this, factory)[ExpenseViewModel::class.java]
 
         setContent {
@@ -87,6 +91,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Dashboard : Screen("dashboard", "PaisaVasool", Icons.Default.Home)
     object History : Screen("history", "History", Icons.Default.History)
     object Analytics : Screen("analytics", "Analytics", Icons.Default.BarChart)
+    object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object AddTransaction : Screen("add_transaction", "Add", Icons.Default.Home)
 }
 
@@ -99,7 +104,8 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
     val bottomNavItems = listOf(
         Screen.Dashboard,
         Screen.History,
-        Screen.Analytics
+        Screen.Analytics,
+        Screen.Settings,
     )
 
     val shouldShowBottomBar = currentRoute in bottomNavItems.map { it.route }
@@ -215,6 +221,9 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
             composable(Screen.Analytics.route) {
                 AnalyticsScreen(viewModel = viewModel)
             }
+            composable(Screen.Settings.route) {
+                SettingsScreen(viewModel = viewModel)
+            }
             composable(
                 route = "${Screen.AddTransaction.route}?id={id}",
                 arguments = listOf(
@@ -227,11 +236,10 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
                 val id = backStackEntry.arguments?.getInt("id") ?: -1
                 AddTransactionScreen(
                     viewModel = viewModel,
-                    transactionId = if (id == -1) null else id,
-                    onBackClick = {
-                        navController.popBackStack()
-                    }
-                )
+                    transactionId = if (id == -1) null else id
+                ) {
+                    navController.popBackStack()
+                }
             }
         }
     }
