@@ -1,6 +1,7 @@
 package com.example.paisavasool.ui.screen
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,8 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -36,6 +40,8 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -46,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -60,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.paisavasool.data.model.SplitType
 import com.example.paisavasool.data.model.TransactionType
 import com.example.paisavasool.ui.model.Category
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModel
@@ -82,6 +91,11 @@ fun AddTransactionScreen(
     var type by remember { mutableStateOf(TransactionType.EXPENSE) }
     var timestamp by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
+    
+    var isSplit by remember { mutableStateOf(false) }
+    var splitCount by remember { mutableIntStateOf(2) }
+    var splitType by remember { mutableStateOf(SplitType.EQUAL) }
+    var splitValue by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -89,18 +103,19 @@ fun AddTransactionScreen(
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = timestamp)
         DatePickerDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
                         timestamp = it
                     }
+                    showDatePicker = false
                 }) {
                     Text("OK")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { }) {
+                TextButton(onClick = { showDatePicker = false }) {
                     Text("Cancel")
                 }
             }
@@ -118,6 +133,13 @@ fun AddTransactionScreen(
                 categoryName = transaction.category
                 type = transaction.type
                 timestamp = transaction.timestamp
+                isSplit = transaction.isSplit
+                splitCount = transaction.splitCount
+                splitType = transaction.splitType
+                splitValue = if (transaction.splitType == SplitType.EQUAL) "" else transaction.splitValue.toString()
+                if (transaction.isSplit) {
+                    amount = transaction.originalAmount.toString()
+                }
             }
         }
     }
@@ -278,7 +300,7 @@ fun AddTransactionScreen(
             Spacer(modifier = Modifier.height(4.dp))
             
             OutlinedCard(
-                onClick = { },
+                onClick = { showDatePicker = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -313,6 +335,157 @@ fun AddTransactionScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Split Expense Option
+            if (type == TransactionType.EXPENSE) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Groups,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Split Expense", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text("Divide with others", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    Switch(
+                        checked = isSplit,
+                        onCheckedChange = { isSplit = it },
+                        thumbContent = if (isSplit) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        } else null
+                    )
+                }
+
+                if (isSplit) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            // Split Type Selector
+                            SingleChoiceSegmentedButtonRow(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                SplitType.entries.forEachIndexed { index, sType ->
+                                    SegmentedButton(
+                                        selected = splitType == sType,
+                                        onClick = { splitType = sType },
+                                        shape = SegmentedButtonDefaults.itemShape(index = index, count = SplitType.entries.size)
+                                    ) {
+                                        Text(sType.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            when (splitType) {
+                                SplitType.EQUAL -> {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Split between", style = MaterialTheme.typography.bodySmall)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(
+                                                onClick = { if (splitCount > 2) splitCount-- },
+                                                modifier = Modifier.size(32.dp)
+                                            ) {
+                                                Text("-", style = MaterialTheme.typography.titleLarge)
+                                            }
+                                            Text(
+                                                "$splitCount people",
+                                                modifier = Modifier.padding(horizontal = 8.dp),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            IconButton(
+                                                onClick = { if (splitCount < 20) splitCount++ },
+                                                modifier = Modifier.size(32.dp)
+                                            ) {
+                                                Text("+", style = MaterialTheme.typography.titleLarge)
+                                            }
+                                        }
+                                    }
+                                }
+                                SplitType.PERCENTAGE -> {
+                                    OutlinedTextField(
+                                        value = splitValue,
+                                        onValueChange = { if (it.length <= 3) splitValue = it },
+                                        label = { Text("Your Percentage (%)") },
+                                        placeholder = { Text("e.g. 50") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        suffix = { Text("%") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
+                                SplitType.CUSTOM -> {
+                                    OutlinedTextField(
+                                        value = splitValue,
+                                        onValueChange = { splitValue = it },
+                                        label = { Text("Your Share Amount (₹)") },
+                                        placeholder = { Text("e.g. 500") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        prefix = { Text("₹") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
+                            }
+                            
+                            val totalAmount = amount.toDoubleOrNull() ?: 0.0
+                            val myShare = when (splitType) {
+                                SplitType.EQUAL -> totalAmount / splitCount
+                                SplitType.PERCENTAGE -> (splitValue.toDoubleOrNull() ?: 0.0) / 100.0 * totalAmount
+                                SplitType.CUSTOM -> splitValue.toDoubleOrNull() ?: 0.0
+                            }
+                            
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Your Share", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "₹${String.format(Locale.getDefault(), "%.2f", myShare)}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Category Selection
             if (type == TransactionType.EXPENSE) {
@@ -385,11 +558,42 @@ fun AddTransactionScreen(
             
             Button(
                 onClick = {
-                    val amountVal = amount.toDoubleOrNull() ?: 0.0
+                    val originalAmountVal = amount.toDoubleOrNull() ?: 0.0
+                    val finalAmount = if (isSplit) {
+                        when (splitType) {
+                            SplitType.EQUAL -> originalAmountVal / splitCount
+                            SplitType.PERCENTAGE -> (splitValue.toDoubleOrNull() ?: 0.0) / 100.0 * originalAmountVal
+                            SplitType.CUSTOM -> splitValue.toDoubleOrNull() ?: 0.0
+                        }
+                    } else originalAmountVal
+                    
                     if (transactionId == null) {
-                        viewModel.addTransaction(title, amountVal, categoryName, type, timestamp)
+                        viewModel.addTransaction(
+                            title = title,
+                            amount = finalAmount,
+                            category = categoryName,
+                            type = type,
+                            timestamp = timestamp,
+                            isSplit = isSplit,
+                            splitType = splitType,
+                            splitValue = splitValue.toDoubleOrNull() ?: 0.0,
+                            splitCount = splitCount,
+                            originalAmount = originalAmountVal
+                        )
                     } else {
-                        viewModel.updateTransaction(transactionId, title, amountVal, categoryName, type, timestamp)
+                        viewModel.updateTransaction(
+                            id = transactionId,
+                            title = title,
+                            amount = finalAmount,
+                            category = categoryName,
+                            type = type,
+                            timestamp = timestamp,
+                            isSplit = isSplit,
+                            splitType = splitType,
+                            splitValue = splitValue.toDoubleOrNull() ?: 0.0,
+                            splitCount = splitCount,
+                            originalAmount = originalAmountVal
+                        )
                     }
                     onBackClick()
                 },

@@ -12,4 +12,9 @@ data class Transaction(
     val timestamp: Long,
     val category: String,
     val type: TransactionType,
+    val isSplit: Boolean = false,
+    val splitType: SplitType = SplitType.EQUAL,
+    val splitValue: Double = 0.0,
+    val splitCount: Int = 1,
+    val originalAmount: Double = amount,
 )

@@ -31,4 +31,7 @@ interface TransactionDao {
 
     @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE'")
     fun getTotalExpense(): Flow<Double?>
+
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAllTransactions()
 }

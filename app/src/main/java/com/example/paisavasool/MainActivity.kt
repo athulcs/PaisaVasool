@@ -52,6 +52,7 @@ import com.example.paisavasool.ui.screen.AddTransactionScreen
 import com.example.paisavasool.ui.screen.AnalyticsScreen
 import com.example.paisavasool.ui.screen.DashboardScreen
 import com.example.paisavasool.ui.screen.HistoryScreen
+import com.example.paisavasool.ui.screen.LoginScreen
 import com.example.paisavasool.ui.screen.SettingsScreen
 import com.example.paisavasool.ui.theme.IndigoPrimary
 import com.example.paisavasool.ui.theme.IndigoSecondary
@@ -59,6 +60,7 @@ import com.example.paisavasool.ui.theme.PaisaVasoolTheme
 import com.example.paisavasool.ui.theme.TextSecondary
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModel
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModelFactory
+import androidx.compose.runtime.collectAsState
 
 class MainActivity : ComponentActivity() {
 
@@ -88,6 +90,7 @@ class MainActivity : ComponentActivity() {
 }
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
+    object Login : Screen("login", "Login", Icons.Default.Home)
     object Dashboard : Screen("dashboard", "PaisaVasool", Icons.Default.Home)
     object History : Screen("history", "History", Icons.Default.History)
     object Analytics : Screen("analytics", "Analytics", Icons.Default.BarChart)
@@ -100,6 +103,7 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     val bottomNavItems = listOf(
         Screen.Dashboard,
@@ -172,7 +176,7 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
+            startDestination = if (isLoggedIn) Screen.Dashboard.route else Screen.Login.route,
             modifier = Modifier.padding(
                 bottom = if (shouldShowBottomBar) innerPadding.calculateBottomPadding() else 0.dp
             ),
@@ -181,6 +185,13 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) }
         ) {
+            composable(Screen.Login.route) {
+                LoginScreen(viewModel = viewModel) {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            }
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
                     viewModel = viewModel,

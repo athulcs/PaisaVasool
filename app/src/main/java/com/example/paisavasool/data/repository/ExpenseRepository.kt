@@ -24,4 +24,8 @@ class ExpenseRepository(private val transactionDao: TransactionDao) {
     suspend fun delete(transaction: Transaction) {
         transactionDao.deleteTransaction(transaction)
     }
+
+    suspend fun deleteAllTransactions() {
+        transactionDao.deleteAllTransactions()
+    }
 }

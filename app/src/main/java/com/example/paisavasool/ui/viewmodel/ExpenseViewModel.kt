@@ -2,6 +2,7 @@ package com.example.paisavasool.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.paisavasool.data.model.SplitType
 import com.example.paisavasool.data.model.Transaction
 import com.example.paisavasool.data.model.TransactionType
 import com.example.paisavasool.data.repository.ExpenseRepository
@@ -18,10 +19,18 @@ class ExpenseViewModel(
 ) : ViewModel() {
 
     val isIncomeTrackingEnabled: StateFlow<Boolean> = preferenceManager.isIncomeTrackingEnabledFlow
+    val isLoggedIn: StateFlow<Boolean> = preferenceManager.isLoggedInFlow
 
     fun setIncomeTrackingEnabled(enabled: Boolean) {
         preferenceManager.setIncomeTrackingEnabled(enabled)
     }
+
+    fun setLoggedIn(loggedIn: Boolean, userName: String? = null, userEmail: String? = null) {
+        preferenceManager.setLoggedIn(loggedIn, userName, userEmail)
+    }
+
+    fun getUserName(): String? = preferenceManager.getUserName()
+    fun getUserEmail(): String? = preferenceManager.getUserEmail()
 
     val allTransactions: StateFlow<List<Transaction>> = repository.allTransactions.stateIn(
         scope = viewModelScope,
@@ -43,20 +52,48 @@ class ExpenseViewModel(
         initialValue = 0.0,
     )
 
-    fun addTransaction(title: String, amount: Double, category: String, type: TransactionType, timestamp: Long = System.currentTimeMillis()) {
+    fun addTransaction(
+        title: String,
+        amount: Double,
+        category: String,
+        type: TransactionType,
+        timestamp: Long = System.currentTimeMillis(),
+        isSplit: Boolean = false,
+        splitType: SplitType = SplitType.EQUAL,
+        splitValue: Double = 0.0,
+        splitCount: Int = 1,
+        originalAmount: Double = amount
+    ) {
         viewModelScope.launch {
             val transaction = Transaction(
                 title = title,
                 amount = amount,
                 timestamp = timestamp,
                 category = category,
-                type = type
+                type = type,
+                isSplit = isSplit,
+                splitType = splitType,
+                splitValue = splitValue,
+                splitCount = splitCount,
+                originalAmount = originalAmount
             )
             repository.insert(transaction)
         }
     }
 
-    fun updateTransaction(id: Int, title: String, amount: Double, category: String, type: TransactionType, timestamp: Long) {
+    fun updateTransaction(
+        id: Int,
+        title: String,
+        amount: Double,
+        category: String,
+        type: TransactionType,
+        timestamp: Long,
+        isSplit: Boolean = false,
+        splitType: SplitType = SplitType.EQUAL,
+        splitValue: Double = 0.0,
+        splitCount: Int = 1,
+        originalAmount: Double = amount
+    ) {
         viewModelScope.launch {
             val transaction = Transaction(
                 id = id,
@@ -64,7 +101,12 @@ class ExpenseViewModel(
                 amount = amount,
                 timestamp = timestamp,
                 category = category,
-                type = type
+                type = type,
+                isSplit = isSplit,
+                splitType = splitType,
+                splitValue = splitValue,
+                splitCount = splitCount,
+                originalAmount = originalAmount
             )
             repository.update(transaction)
         }
@@ -77,6 +119,12 @@ class ExpenseViewModel(
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             repository.delete(transaction)
+        }
+    }
+
+    fun deleteAllTransactions() {
+        viewModelScope.launch {
+            repository.deleteAllTransactions()
         }
     }
 }
