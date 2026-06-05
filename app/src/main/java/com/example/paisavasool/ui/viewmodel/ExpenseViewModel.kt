@@ -44,6 +44,12 @@ class ExpenseViewModel(
         initialValue = 0.0,
     )
 
+    val totalIncome: StateFlow<Double> = repository.totalIncome.map { it ?: 0.0 }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0.0,
+    )
+
     val balance: StateFlow<Double> = repository.allTransactions.map { transactions ->
         transactions.sumOf { if (it.type == TransactionType.INCOME) it.amount else -it.amount }
     }.stateIn(

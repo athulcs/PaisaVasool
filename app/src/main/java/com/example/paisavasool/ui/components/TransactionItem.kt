@@ -39,7 +39,7 @@ fun TransactionItem(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .padding(horizontal = 8.dp, vertical = 6.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -47,7 +47,7 @@ fun TransactionItem(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
                         .background(category.color.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
@@ -56,17 +56,17 @@ fun TransactionItem(
                         imageVector = category.icon,
                         contentDescription = null,
                         tint = category.color,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
                 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = transaction.title,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleSmall,
                             maxLines = 1
                         )
                         if (transaction.isSplit) {
@@ -110,7 +110,7 @@ fun TransactionItem(
 
             Text(
                 text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"} ₹${transaction.amount}",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         }

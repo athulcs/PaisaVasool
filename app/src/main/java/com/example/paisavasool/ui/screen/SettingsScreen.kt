@@ -1,5 +1,8 @@
 package com.example.paisavasool.ui.screen
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -7,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -22,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModel
+import com.example.paisavasool.utils.DataExportUtils
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
@@ -29,10 +34,27 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 @Composable
 fun SettingsScreen(viewModel: ExpenseViewModel) {
     val isIncomeTrackingEnabled by viewModel.isIncomeTrackingEnabled.collectAsState()
+    val transactions by viewModel.allTransactions.collectAsState()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                    val csvData = DataExportUtils.generateCsv(transactions)
+                    outputStream.write(csvData.toByteArray())
+                }
+                Toast.makeText(context, "Data exported successfully", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to export data: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -164,6 +186,21 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            ListItem(
+                headlineContent = { Text("Export to Excel (CSV)") },
+                supportingContent = { Text("Save your transaction data as a CSV file") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.FileDownload,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier.clickable {
+                    exportLauncher.launch("PaisaVasool_Transactions_${System.currentTimeMillis()}.csv")
+                }
             )
 
             ListItem(

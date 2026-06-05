@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -30,6 +29,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,19 +39,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.paisavasool.data.database.AppDatabase
 import com.example.paisavasool.data.repository.ExpenseRepository
 import com.example.paisavasool.data.repository.PreferenceManager
-import com.example.paisavasool.ui.screen.AddTransactionScreen
 import com.example.paisavasool.ui.screen.AnalyticsScreen
 import com.example.paisavasool.ui.screen.DashboardScreen
-import com.example.paisavasool.ui.screen.HistoryScreen
 import com.example.paisavasool.ui.screen.LoginScreen
 import com.example.paisavasool.ui.screen.SettingsScreen
 import com.example.paisavasool.ui.theme.IndigoPrimary
@@ -60,7 +56,6 @@ import com.example.paisavasool.ui.theme.PaisaVasoolTheme
 import com.example.paisavasool.ui.theme.TextSecondary
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModel
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModelFactory
-import androidx.compose.runtime.collectAsState
 
 class MainActivity : ComponentActivity() {
 
@@ -92,10 +87,8 @@ class MainActivity : ComponentActivity() {
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Login : Screen("login", "Login", Icons.Default.Home)
     object Dashboard : Screen("dashboard", "PaisaVasool", Icons.Default.Home)
-    object History : Screen("history", "History", Icons.Default.History)
     object Analytics : Screen("analytics", "Analytics", Icons.Default.BarChart)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
-    object AddTransaction : Screen("add_transaction", "Add", Icons.Default.Home)
 }
 
 @Composable
@@ -107,7 +100,6 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
 
     val bottomNavItems = listOf(
         Screen.Dashboard,
-        Screen.History,
         Screen.Analytics,
         Screen.Settings,
     )
@@ -193,64 +185,13 @@ fun MainAppScreen(viewModel: ExpenseViewModel) {
                 }
             }
             composable(Screen.Dashboard.route) {
-                DashboardScreen(
-                    viewModel = viewModel,
-                    onAddTransactionClick = {
-                        navController.navigate(Screen.AddTransaction.route)
-                    },
-                    onViewAllClick = {
-                        navController.navigate(Screen.History.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onEditClick = { id ->
-                        navController.navigate("${Screen.AddTransaction.route}?id=$id")
-                    }
-                )
-            }
-            composable(Screen.History.route) {
-                HistoryScreen(
-                    viewModel = viewModel,
-                    onBackClick = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onEditClick = { id ->
-                        navController.navigate("${Screen.AddTransaction.route}?id=$id")
-                    }
-                )
+                DashboardScreen(viewModel = viewModel)
             }
             composable(Screen.Analytics.route) {
                 AnalyticsScreen(viewModel = viewModel)
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(viewModel = viewModel)
-            }
-            composable(
-                route = "${Screen.AddTransaction.route}?id={id}",
-                arguments = listOf(
-                    navArgument("id") {
-                        type = NavType.IntType
-                        defaultValue = -1
-                    }
-                )
-            ) { backStackEntry ->
-                val id = backStackEntry.arguments?.getInt("id") ?: -1
-                AddTransactionScreen(
-                    viewModel = viewModel,
-                    transactionId = if (id == -1) null else id
-                ) {
-                    navController.popBackStack()
-                }
             }
         }
     }
