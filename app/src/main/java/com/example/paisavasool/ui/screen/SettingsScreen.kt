@@ -204,6 +204,22 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
             )
 
             ListItem(
+                headlineContent = { Text("Generate Mock Data") },
+                supportingContent = { Text("Populate database with 1 year of random data") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Code,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                },
+                modifier = Modifier.clickable {
+                    viewModel.generateMockData()
+                    Toast.makeText(context, "Generating mock data...", Toast.LENGTH_SHORT).show()
+                }
+            )
+
+            ListItem(
                 headlineContent = { Text("Clear All Data") },
                 supportingContent = { Text("Delete all transactions from the database") },
                 leadingContent = {
