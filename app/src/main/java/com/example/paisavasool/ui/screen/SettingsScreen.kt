@@ -5,6 +5,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -13,12 +15,14 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,8 +31,10 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.example.paisavasool.ui.viewmodel.ExpenseViewModel
 import com.example.paisavasool.utils.DataExportUtils
+import com.example.paisavasool.utils.UpdateUtils
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,8 +43,53 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
     val transactions by viewModel.allTransactions.collectAsState()
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    
+    var isCheckingUpdates by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateUtils.UpdateInfo?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+
+    val currentVersion = remember { UpdateUtils.getAppVersion(context) }
+
+    if (showUpdateDialog && updateInfo != null) {
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            title = { Text(if (updateInfo!!.isUpdateAvailable) "Update Available" else "No Updates Found") },
+            text = { 
+                Text(
+                    if (updateInfo!!.isUpdateAvailable) 
+                        "A newer version (${updateInfo!!.latestVersion}) is available on GitHub. Your current version is $currentVersion. Would you like to download it?"
+                    else 
+                        "You are already on the latest version ($currentVersion)."
+                ) 
+            },
+            confirmButton = {
+                if (updateInfo!!.isUpdateAvailable) {
+                    Button(onClick = {
+                        uriHandler.openUri(updateInfo!!.releaseUrl)
+                        showUpdateDialog = false
+                    }) {
+                        Text("Download")
+                    }
+                } else {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            },
+            dismissButton = {
+                if (updateInfo!!.isUpdateAvailable) {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("Later")
+                    }
+                }
+            }
+        )
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
@@ -118,7 +169,8 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(scrollState)
         ) {
             Text(
                 text = "General",
@@ -245,12 +297,44 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
 
             ListItem(
                 headlineContent = { Text("Version") },
-                supportingContent = { Text("1.0.0") },
+                supportingContent = { Text(currentVersion) },
                 leadingContent = {
                     Icon(
                         Icons.Default.Info,
                         contentDescription = null
                     )
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("Check for Updates") },
+                supportingContent = { 
+                    if (isCheckingUpdates) Text("Connecting to GitHub...") 
+                    else Text("Find the latest version online") 
+                },
+                leadingContent = {
+                    if (isCheckingUpdates) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(
+                            Icons.Default.SystemUpdate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                modifier = Modifier.clickable(enabled = !isCheckingUpdates) {
+                    scope.launch {
+                        isCheckingUpdates = true
+                        val info = UpdateUtils.checkForUpdates(currentVersion)
+                        isCheckingUpdates = false
+                        if (info != null) {
+                            updateInfo = info
+                            showUpdateDialog = true
+                        } else {
+                            Toast.makeText(context, "Failed to check for updates", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             )
 
@@ -278,6 +362,8 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
                     uriHandler.openUri("https://github.com/athulcs/PaisaVasool")
                 }
             )
+
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
